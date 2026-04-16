@@ -2,15 +2,15 @@
 
 #### Your name
 
-TODO
+Olivia Sullivan
 
 #### Your section leader's name
 
-TODO
+Bao Huynh
 
 #### Project title
 
-TODO
+Purrbo 
 
 ***
 
@@ -18,12 +18,13 @@ Short answers for the below questions suffice. If you want to alter your plan fo
 
 #### What have you done for your project so far?
 
-TODO
+So far I have made the sprites for each weather/outfit combination. I have made the base of the code so that the weather changes randomly and there are buttons to change the outfits
 
 #### What have you not done for your project yet?
+Try to make it a little bit more smoother and also figure out how to make the sprites animated 
 
 TODO
 
 #### What problems, if any, have you encountered?
 
-TODO
+downloading pygame lol some reason i could not troubleshoot that but I figured it out :) 
