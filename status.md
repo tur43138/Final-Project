@@ -23,7 +23,7 @@ So far I have made the sprites for each weather/outfit combination. I have made 
 #### What have you not done for your project yet?
 Try to make it a little bit more smoother and also figure out how to make the sprites animated 
 
-TODO
+
 
 #### What problems, if any, have you encountered?
 
