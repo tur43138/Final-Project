@@ -1,0 +1,240 @@
+import os
+import random
+import sys
+
+import pygame
+pygame.init()
+
+#screen set up 
+width, height = 700, 650
+screen = pygame.display.set_mode((width, height))   
+pygame.display.set_caption("Bob’s Burgers Purrbo")
+clock = pygame.time.Clock()
+
+font = pygame.font.SysFont("arial", 20)
+largefont = pygame.font.SysFont("arial", 25, bold=True)
+
+black = (20, 20, 20)
+white = (245, 245, 245)
+grey = (30, 30, 30)
+
+#weather labels 
+rain = "rain"
+snow = "snow"
+sun = "sun"
+none = "none"
+
+weathers = [sun, rain, snow]
+cat_spot = (width // 2, height // 2)
+
+#loads my drawings 
+def load_sprite(name, size=(220, 220)):
+    path = os.path.join("assets", name)
+    drawing = pygame.image.load(path).convert_alpha()
+    return pygame.transform.scale(drawing, size)
+
+
+sprites = {
+    "idle": load_sprite("idlecat.png"),
+    "sleepy": load_sprite("sleepykitty.gif"),
+    "weather": {
+        rain: load_sprite("raincat.gif"),
+        snow: load_sprite("snowcat.gif"),
+        sun: load_sprite("sweatycat.gif"),
+    },
+    "outfits": {
+        sun: {
+            sun: load_sprite("happysun.png"),
+            rain: load_sprite("glassrain.gif"),
+            snow: load_sprite("glasssnow.gif"),
+        },
+        rain: {
+            rain: load_sprite("happyrain.gif"),
+            snow: load_sprite("sadsnow.gif"),
+            sun: load_sprite("rainsun.gif"),
+        },
+        snow: {
+            snow: load_sprite("happysnow.gif"),
+            rain: load_sprite("snowrain.gif"),
+            sun: load_sprite("snowsun.gif"),
+        },
+    },
+}
+#my catchphrases for the outfits/weather and if they match 
+catchphrase = {
+    sun: {
+        sun: (sprites["outfits"][sun][sun], "too cool for school."),
+        rain: (sprites["outfits"][sun][rain], "this can't be right."),
+        snow: (sprites["outfits"][sun][snow], "im so chilly"),
+    },
+    rain: {
+        rain: (sprites["outfits"][rain][rain], "time to jump in puddles."),
+        snow: (sprites["outfits"][rain][snow], "dry but freezing"),
+        sun: (sprites["outfits"][rain][sun], "i wanted a different kind of shade."),
+    },
+    snow: {
+        snow: (sprites["outfits"][snow][snow], "cozy vibes."),
+        rain: (sprites["outfits"][snow][rain], "why am i soggy?"),
+        sun: (sprites["outfits"][snow][sun], "why is it so hot?"),
+    },
+}
+
+buttons = [
+    {"label": rain, "rect": pygame.Rect(40, 560, 180, 50), "color": (0,0,128)},
+    {"label": snow, "rect": pygame.Rect(260, 560, 180, 50), "color": (128, 128, 128)},
+    {"label": sun, "rect": pygame.Rect(480, 560, 180, 50), "color": (255, 255, 0)},
+]
+pause_button = pygame.Rect(260, 20, 180, 40)
+
+#game state  
+state = {
+    "weather": sun,
+    "outfit": none,
+    "comfort": 100.0,
+    "idle_time": 0.0,
+    "weather_time": 0.0,
+    "paused": False,
+}
+
+
+def inputs(event):
+    if event.type != pygame.MOUSEBUTTONDOWN:
+        return
+
+    state["idle_time"] = 0.0
+
+    for button in buttons:
+        if button["rect"].collidepoint(event.pos):
+            state["outfit"] = button["label"]
+            return   
+
+    if pause_button.collidepoint(event.pos):
+        state["paused"] = not state["paused"]
+
+#dt is date and time
+
+def changeweather(dt):
+    state["weather_time"] += dt
+    if state["weather_time"] >= 4.0:
+        choices = [weather for weather in weathers if weather != state["weather"]]
+        state["weather"] = random.choice(choices)
+        state["weather_time"] = 0.0
+
+
+def changecomfort(dt):
+    if state["outfit"] == none:
+        change = -4.0
+    elif state["outfit"] == state["weather"]:
+        change = 3.0
+    else:
+        change = -7.0
+
+    state["comfort"] += change * dt
+    state["comfort"] = max(0.0, min(100.0, state["comfort"]))
+
+
+def sayreaction():
+    if state["paused"]:
+        return sprites["sleepy"], "nap time."
+
+    if state["idle_time"] >= 10.0:
+        return sprites["idle"], "you left me hanging."
+
+    outfit = state["outfit"]
+    weather = state["weather"]
+
+    if outfit in catchphrase:
+        sprite, text = catchphrase[outfit][weather]
+        return sprite, text
+
+    return sprites["weather"][weather], weather_phrase(weather)
+
+
+def weather_phrase(weather):
+    if weather == rain:
+        return "rainy mood."
+    if weather == snow:
+        return "tiny icicle paws."
+    return "suns out paws out."
+
+
+def draw_button(rect, color, label):
+    pygame.draw.rect(screen, color, rect, border_radius=10)
+    text = font.render(label, True, black)
+    text_rect = text.get_rect(center=rect.center)
+    screen.blit(text, text_rect)
+
+
+def draw_title():
+    screen.blit(largefont.render("Dress Purrbo!", True, white), (20, 15))
+
+    weather_text = font.render(f"weather: {state['weather']}", True, white)
+    comfort_text = font.render(f"comfort: {int(state['comfort'])}", True, white)
+
+    screen.blit(weather_text, (20, 50))
+    screen.blit(comfort_text, (20, 75))
+
+    for button in buttons:
+        draw_button(button["rect"], button["color"], button["label"])
+
+    pause_color = (180, 120, 120) if state["paused"] else (110, 140, 110)
+    draw_button(pause_button, pause_color, "pause")
+
+
+def draw_bubble(text):
+    bubble_text = font.render(text, True, black)
+    bubble_width = max(220, bubble_text.get_width() + 24)
+    bubble_height = bubble_text.get_height() + 20
+
+    x, y = cat_spot
+    bubble = pygame.Rect(0, 0, bubble_width, bubble_height)
+    bubble.midbottom = (x, y - 105)
+
+    pygame.draw.rect(screen, white, bubble, border_radius=12)  
+    pygame.draw.rect(screen, black, bubble, 2, border_radius=12)
+    screen.blit(bubble_text, (bubble.x + 12, bubble.y + 10))
+
+
+def update(dt):
+    if state["paused"]:
+        return
+
+    state["idle_time"] += dt
+    changeweather(dt)
+    changecomfort(dt)
+
+
+def draw():
+    screen.fill(grey)
+
+    sprite, text = sayreaction()
+    sprite_rect = sprite.get_rect(center=cat_spot)
+    screen.blit(sprite, sprite_rect)
+
+    draw_bubble(text)
+    draw_title()
+
+    pygame.display.flip()
+
+
+def main():
+    running = True
+
+    while running:
+        dt = clock.tick(60) / 1000.0
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            else:
+                inputs(event)
+
+        update(dt)
+        draw()
+
+    pygame.quit()
+    sys.exit()
+
+
+if __name__ == "__main__":
+    main()
